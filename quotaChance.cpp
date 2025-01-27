@@ -1,21 +1,21 @@
-#include <random>
-#include <math.h>
+#include <algorithm>
 #include <iostream>
 #include <iomanip>
 #include <thread>
+#include <random>
 
 #define MAX_ITERATIONS 2e7
 
-const int rend = 550;
-const int titan = 700;
-const int artifice = 1500;
-const int threads = std::thread::hardware_concurrency();
+const int REND = 550;
+const int TITAN = 700;
+const int ARTIFICE = 1500;
+const int THREADS = std::thread::hardware_concurrency();
 
 class ThreadInfo {
   public:
   std::mt19937 random;
 
-  int threadCount = threads;
+  const int threadCount = THREADS;
   int threadNumber;
 
   int version;
@@ -47,62 +47,59 @@ class ThreadInfo {
 long double qCurve(long double x) {
   long double f;
   if (x <= 0.1172)
-    f = 120.0163409*x*x*x-50.5378659*x*x+7.4554*x-0.503;
+    f = 120.0163409*x*x*x - 50.5378659*x*x + 7.4554*x - 0.503;
   else if (x <= 0.8804)
-    f = 0.57326727*x*x*x-0.8792601*x*x+0.73737564*x-0.20546592;
+    f = 0.57326727*x*x*x - 0.8792601*x*x + 0.73737564*x - 0.20546592;
   else
-    f = 120.77228959*x*x*x-313.35391533*x*x+271.4424619*x-78.35783615;
+    f = 120.77228959*x*x*x - 313.35391533*x*x + 271.4424619*x - 78.35783615;
 
   return f;
 }  
 
 int incQuota(int num, long double r) {
-  return (int)floor(100*(1 + num*num/16.0)*(1+qCurve(r)));
+  return (int)floor(100*(1 + num*num/16.0)*(1 + qCurve(r)));
 }
 
 void threadedPassTest(ThreadInfo* threadData) {
   std::uniform_real_distribution<long double> unit(0.0, 1.0);
   int passes = 0;
 
+  int moonPrice = 0;
+  switch (threadData->version) {
+    case 40: 
+      moonPrice = TITAN;
+      break;
+
+    case 49:
+      moonPrice = REND;
+      break;
+
+    case -1:
+      moonPrice = 0;
+      break;
+
+    default:
+      moonPrice = ARTIFICE;
+      break;
+  }
+
   int iterations = 1 + MAX_ITERATIONS/(threadData->threadCount+1);
   int finalJ;
-  for (int i = threadData->threadNumber*iterations; i < (threadData->threadNumber+1)*iterations && i < MAX_ITERATIONS; i++) {
-    int needSell = (5*threadData->oversell+5)/6;
+  for (int i = threadData->threadNumber*iterations; i < (threadData->threadNumber + 1)*iterations && i < MAX_ITERATIONS; i++) {
+    int needSell = (5*threadData->oversell + 5)/6;
     int quota = threadData->currentQuota;
 
     for (int j = threadData->numberQuota; quota < threadData->targetQuota; j++) {
-      switch (threadData->version) {
-        case 40: 
-          if (titan - 75 > quota)
-            needSell += (5*titan+75+quota+5)/6;
-          else
-            needSell += fmax(titan, quota);
-          break;
-
-        case 49:
-          if (rend - 75 > quota)
-            needSell += (5*rend+75+quota+5)/6;
-          else
-            needSell += fmax(rend, quota);
-          break;
-
-        case -1:
-          needSell += quota;
-          break;
-
-        default:
-          if (artifice - 75 > quota)
-            needSell += (5*artifice+75+quota+5)/6;
-          else
-            needSell += fmax(artifice, quota);
-          break;
-      }
+      if (moonPrice - 75 > quota)
+        needSell += (5*moonPrice + 75 + quota + 5)/6;
+      else
+        needSell += std::max(moonPrice, quota);
 
       quota += incQuota(j, unit(threadData->random));
       finalJ = j;
     }
 
-    if (threadData->shipScrap + 3*threadData->average*(finalJ-threadData->numberQuota+1) >= needSell)
+    if (threadData->shipScrap + 3*threadData->average*(finalJ - threadData->numberQuota + 1) >= needSell)
       passes++;
   }
 
@@ -133,9 +130,9 @@ int main() {
   std::cout << "Target quota: ";
   std::cin >> runData.targetQuota;
 
-  std::thread threaded[threads];
-  ThreadInfo perThreadInfo[threads];
-  for (int i = 0; i < threads; i++) {
+  std::thread threaded[THREADS];
+  ThreadInfo perThreadInfo[THREADS];
+  for (int i = 0; i < THREADS; i++) {
     std::random_device rngSeed;
 
     perThreadInfo[i] = runData;
@@ -146,7 +143,7 @@ int main() {
   }
 
   double chance = 0;
-  for (int i = 0; i < threads; i++) {
+  for (int i = 0; i < THREADS; i++) {
     threaded[i].join();
     chance += (double)perThreadInfo[i].threadReturn;
   }
