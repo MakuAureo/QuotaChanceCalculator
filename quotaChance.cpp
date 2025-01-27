@@ -67,7 +67,7 @@ void threadedPassTest(ThreadInfo* threadData) {
   int iterations = 1 + MAX_ITERATIONS/(threadData->threadCount+1);
   int finalJ;
   for (int i = threadData->threadNumber*iterations; i < (threadData->threadNumber+1)*iterations && i < MAX_ITERATIONS; i++) {
-    int needSell = ceil(5*threadData->oversell/6.0);
+    int needSell = (5*threadData->oversell+5)/6;
     int quota = threadData->currentQuota;
 
     for (int j = threadData->numberQuota; quota < threadData->targetQuota; j++) {
