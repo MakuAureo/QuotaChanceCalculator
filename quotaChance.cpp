@@ -2,12 +2,46 @@
 #include <math.h>
 #include <iostream>
 #include <iomanip>
+#include <thread>
 
-#define MAX_ITERATIONS 2e6
+#define MAX_ITERATIONS 2e7
 
-long rend = 550;
-long titan = 700;
-long artifice = 1500;
+const int rend = 550;
+const int titan = 700;
+const int artifice = 1500;
+const int threads = std::thread::hardware_concurrency();
+
+class ThreadInfo {
+  public:
+  std::mt19937 random;
+
+  int threadCount = threads;
+  int threadNumber;
+
+  int version;
+  int currentQuota;
+  int numberQuota;
+  int shipScrap;
+  int oversell;
+  int average;
+  int targetQuota;
+
+  int threadReturn;
+
+  ThreadInfo& operator=(const ThreadInfo& ti) {
+    if (this != &ti) {
+      version = ti.version;
+      currentQuota = ti.currentQuota;
+      numberQuota = ti.numberQuota;
+      shipScrap = ti.shipScrap;
+      oversell = ti.oversell;
+      average = ti.average;
+      targetQuota = ti.targetQuota;
+    }
+
+    return *this;
+  }
+};
 
 //Curve that the game uses to skew the random number generator towards 0
 long double qCurve(long double x) {
@@ -20,82 +54,101 @@ long double qCurve(long double x) {
     f = 120.77228959*x*x*x-313.35391533*x*x+271.4424619*x-78.35783615;
 
   return f;
+}  
+
+int incQuota(int num, long double r) {
+  return (int)floor(100*(1 + num*num/16.0)*(1+qCurve(r)));
 }
 
-int main(int argc, char** argv) {
-  std::random_device rng;
-  std::mt19937 gen(rng());
+void threadedPassTest(ThreadInfo* threadData) {
   std::uniform_real_distribution<long double> unit(0.0, 1.0);
+  int passes = 0;
 
-  auto incQuota = [](long int num, long double r) {
-    return floor(100*(1 + num*num/16.0)*(1+qCurve(r)));
-  };
+  int iterations = 1 + MAX_ITERATIONS/(threadData->threadCount+1);
+  int finalJ;
+  for (int i = threadData->threadNumber*iterations; i < (threadData->threadNumber+1)*iterations && i < MAX_ITERATIONS; i++) {
+    int needSell = ceil(5*threadData->oversell/6.0);
+    int quota = threadData->currentQuota;
 
-  std::cout << "Version: ";
-  long vers;
-  std::cin >> vers;
-
-  std::cout << "Current quota: ";
-  long currQ;
-  std::cin >> currQ;
-
-  std::cout << "Current quota number: ";
-  long numbQ;
-  std::cin >> numbQ;
-
-  std::cout << "Ship scrap: ";
-  long shipS;
-  std::cin >> shipS;
-
-  std::cout << "Oversell: ";
-  long overS;
-  std::cin >> overS;
-
-  std::cout << "Estimated average: ";
-  long currA;
-  std::cin >> currA;
-
-  std::cout << "Target quota: ";
-  long targQ;
-  std::cin >> targQ;
-
-  double chance = 0;
-  for (int i = 0; i < MAX_ITERATIONS; i++) {
-    long needS = ceil(5*overS/6.0);
-    long quota = currQ;
-
-    for (int j = numbQ; quota < targQ; j++) {
-      switch (vers) {
+    for (int j = threadData->numberQuota; quota < threadData->targetQuota; j++) {
+      switch (threadData->version) {
         case 40: 
           if (titan - 75 > quota)
-            needS += ceil((5*titan+75+quota)/6.0);
+            needSell += ceil((5*titan+75+quota)/6.0);
           else
-            needS += fmax(titan, quota);
+            needSell += fmax(titan, quota);
           break;
 
         case 49:
           if (rend - 75 > quota)
-            needS += ceil((5*rend+75+quota)/6.0);
+            needSell += ceil((5*rend+75+quota)/6.0);
           else
-            needS += fmax(rend, quota);
+            needSell += fmax(rend, quota);
           break;
 
         case -1:
-          needS += quota;
+          needSell += quota;
           break;
 
         default:
           if (artifice - 75 > quota)
-            needS += ceil((5*artifice+75+quota)/6.0);
+            needSell += ceil((5*artifice+75+quota)/6.0);
           else
-            needS += fmax(artifice, quota);
+            needSell += fmax(artifice, quota);
           break;
       }
-      quota += incQuota(j, unit(rng));
 
-      if ((quota >= targQ) && (shipS + 3*currA*(j-numbQ+1) >= needS))
-        chance++;
+      quota += incQuota(j, unit(threadData->random));
+      finalJ = j;
     }
+
+    if (threadData->shipScrap + 3*threadData->average*(finalJ-threadData->numberQuota+1) >= needSell)
+      passes++;
+  }
+
+  threadData->threadReturn = passes;
+}
+
+int main() {
+  ThreadInfo runData;
+
+  std::cout << "Version: ";
+  std::cin >> runData.version;
+
+  std::cout << "Current quota: ";
+  std::cin >> runData.currentQuota;
+
+  std::cout << "Current quota number: ";
+  std::cin >> runData.numberQuota;
+
+  std::cout << "Ship scrap: ";
+  std::cin >> runData.shipScrap;
+
+  std::cout << "Oversell: ";
+  std::cin >> runData.oversell;
+
+  std::cout << "Estimated average: ";
+  std::cin >> runData.average;
+
+  std::cout << "Target quota: ";
+  std::cin >> runData.targetQuota;
+
+  std::thread threaded[threads];
+  ThreadInfo perThreadInfo[threads];
+  for (int i = 0; i < threads; i++) {
+    std::random_device rngSeed;
+
+    perThreadInfo[i] = runData;
+    perThreadInfo[i].threadNumber = i;
+    perThreadInfo[i].random = std::mt19937(rngSeed());
+
+    threaded[i] = std::thread(threadedPassTest, &perThreadInfo[i]);
+  }
+
+  double chance = 0;
+  for (int i = 0; i < threads; i++) {
+    threaded[i].join();
+    chance += (double)perThreadInfo[i].threadReturn;
   }
 
   std::cout << std::fixed;
