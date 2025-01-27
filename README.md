@@ -30,3 +30,6 @@ The program takes 7 inputs:
 
 - Target quota:
   Desired quota to be reached
+
+## Credits
+Algorythm for helping me with better rng
