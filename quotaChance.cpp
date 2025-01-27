@@ -57,7 +57,7 @@ long double qCurve(long double x) {
 }  
 
 int incQuota(int num, long double r) {
-  return (int)floor(100*(1 + num*num/16.0)*(1 + qCurve(r)));
+  return (int)(100*(1 + num*num/16.0)*(1 + qCurve(r)));
 }
 
 void threadedPassTest(ThreadInfo* threadData) {
