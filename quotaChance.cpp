@@ -74,14 +74,14 @@ void threadedPassTest(ThreadInfo* threadData) {
       switch (threadData->version) {
         case 40: 
           if (titan - 75 > quota)
-            needSell += ceil((5*titan+75+quota)/6.0);
+            needSell += (5*titan+75+quota+5)/6;
           else
             needSell += fmax(titan, quota);
           break;
 
         case 49:
           if (rend - 75 > quota)
-            needSell += ceil((5*rend+75+quota)/6.0);
+            needSell += (5*rend+75+quota+5)/6;
           else
             needSell += fmax(rend, quota);
           break;
@@ -92,7 +92,7 @@ void threadedPassTest(ThreadInfo* threadData) {
 
         default:
           if (artifice - 75 > quota)
-            needSell += ceil((5*artifice+75+quota)/6.0);
+            needSell += (5*artifice+75+quota+5)/6;
           else
             needSell += fmax(artifice, quota);
           break;
