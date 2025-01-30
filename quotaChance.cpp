@@ -13,38 +13,27 @@ const int THREADS = std::thread::hardware_concurrency();
 
 class ThreadInfo {
   public:
-  std::mt19937 random;
+  const std::mt19937 random;
 
   const int threadCount = THREADS;
-  int threadNumber;
+  const int threadNumber;
 
-  int version;
-  int currentQuota;
-  int numberQuota;
-  int shipScrap;
-  int oversell;
-  int average;
-  int targetQuota;
+  const int version;
+  const int currentQuota;
+  const int numberQuota;
+  const int shipScrap;
+  const int oversell;
+  const int average;
+  const int targetQuota;
 
   int threadReturn;
 
-  ThreadInfo& operator=(const ThreadInfo& ti) {
-    if (this != &ti) {
-      version = ti.version;
-      currentQuota = ti.currentQuota;
-      numberQuota = ti.numberQuota;
-      shipScrap = ti.shipScrap;
-      oversell = ti.oversell;
-      average = ti.average;
-      targetQuota = ti.targetQuota;
-    }
-
-    return *this;
+  ThreadInfo(int version, int currentQuota, int numberQuota, int shipScrap, int oversell, int average, int targetQuota, int threadNumber, int seed) noexcept : version(version), currentQuota(currentQuota), numberQuota(numberQuota), shipScrap(shipScrap), oversell(oversell), average(average), targetQuota(targetQuota), threadNumber(threadNumber), random(std::mt19937(seed)) {
   }
 };
 
 //Curve that the game uses to skew the random number generator towards 0
-long double qCurve(long double x) {
+long double qCurve(long double x) noexcept {
   long double f;
   if (x <= 0.1172)
     f = ((120.0163409 * x - 50.5378659) * x + 7.4554) * x - 0.503;
@@ -56,11 +45,11 @@ long double qCurve(long double x) {
   return f;
 }  
 
-int incQuota(int num, long double r) {
+int incQuota(int num, long double r) noexcept {
   return (int)(100*(1 + num*num/16.0)*(1 + qCurve(r)));
 }
 
-void threadedPassTest(ThreadInfo* threadData) {
+void threadedPassTest(ThreadInfo* threadData) noexcept {
   std::uniform_real_distribution<long double> unit(0.0, 1.0);
   int passes = 0;
 
@@ -107,37 +96,42 @@ void threadedPassTest(ThreadInfo* threadData) {
 }
 
 int main() {
+  int version;
+  int currentQuota;
+  int numberQuota;
+  int shipScrap;
+  int oversell;
+  int average;
+  int targetQuota;
   ThreadInfo runData;
 
   std::cout << "Version: ";
-  std::cin >> runData.version;
+  std::cin >> version;
 
   std::cout << "Current quota: ";
-  std::cin >> runData.currentQuota;
+  std::cin >> currentQuota;
 
   std::cout << "Current quota number: ";
-  std::cin >> runData.numberQuota;
+  std::cin >> numberQuota;
 
   std::cout << "Ship scrap: ";
-  std::cin >> runData.shipScrap;
+  std::cin >> shipScrap;
 
   std::cout << "Oversell: ";
-  std::cin >> runData.oversell;
+  std::cin >> oversell;
 
   std::cout << "Estimated average: ";
-  std::cin >> runData.average;
+  std::cin >> average;
 
   std::cout << "Target quota: ";
-  std::cin >> runData.targetQuota;
+  std::cin >> targetQuota;
 
   std::thread threaded[THREADS];
   ThreadInfo perThreadInfo[THREADS];
   for (int i = 0; i < THREADS; i++) {
     std::random_device rngSeed;
 
-    perThreadInfo[i] = runData;
-    perThreadInfo[i].threadNumber = i;
-    perThreadInfo[i].random = std::mt19937(rngSeed());
+    perThreadInfo[i] = ThreadInfo(version, currentQuota, shipScrap, oversell, average, targetQuota, i, rngSeed());
 
     threaded[i] = std::thread(threadedPassTest, &perThreadInfo[i]);
   }
