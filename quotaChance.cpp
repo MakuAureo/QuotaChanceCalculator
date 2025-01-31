@@ -27,17 +27,14 @@ class ThreadInfo {
   const int targetQuota;
 
   int threadReturn;
-
-  ThreadInfo() noexcept : version(0), currentQuota(0), numberQuota(0), shipScrap(0), oversell(0), average(0), targetQuota(0), threadNumber(0), random(std::mt19937(0)) {
-  }
   
   ThreadInfo(int version, int currentQuota, int numberQuota, int shipScrap, int oversell, int average, int targetQuota, int threadNumber, int seed) noexcept : version(version), currentQuota(currentQuota), numberQuota(numberQuota), shipScrap(shipScrap), oversell(oversell), average(average), targetQuota(targetQuota), threadNumber(threadNumber), random(std::mt19937(seed)) {
   }
 };
 
 //Curve that the game uses to skew the random number generator towards 0
-long double qCurve(long double x) noexcept {
-  long double f;
+double qCurve(double x) noexcept {
+  double f;
   if (x <= 0.1172)
     f = ((120.0163409 * x - 50.5378659) * x + 7.4554) * x - 0.503;
   else if (x <= 0.8804)
@@ -46,14 +43,14 @@ long double qCurve(long double x) noexcept {
     f = ((120.77228959 * x - 313.35391533) * x + 271.4424619) * x - 78.35783615;
 
   return f;
-}  
+}
 
-int incQuota(int num, long double r) noexcept {
+int incQuota(int num, double r) noexcept {
   return (int)(100*(1 + num*num/16.0)*(1 + qCurve(r)));
 }
 
 void threadedPassTest(ThreadInfo* threadData) noexcept {
-  std::uniform_real_distribution<long double> unit(0.0, 1.0);
+  std::uniform_real_distribution<double> unit(0.0, 1.0);
   int passes = 0;
 
   int moonPrice = 0;
