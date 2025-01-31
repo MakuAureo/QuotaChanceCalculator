@@ -129,7 +129,7 @@ int main() {
   std::cin >> targetQuota;
 
   std::thread threaded[THREADS];
-  ThreadInfo *perThreadInfo = static_cast<ThreadInfo *>(::operator new[](THREADS * sizeof(ThreadInfo))); // this is kind of disgusting
+  alignas(ThreadInfo) ThreadInfo *perThreadInfo = static_cast<ThreadInfo *>(::operator new[](THREADS * sizeof(ThreadInfo))); // this is kind of disgusting
   for (int i = 0; i < THREADS; i++) {
     std::random_device rngSeed;
     new (&perThreadInfo[i]) ThreadInfo(version, currentQuota, numberQuota, shipScrap, oversell, average, targetQuota, i, rngSeed());
