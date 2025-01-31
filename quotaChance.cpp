@@ -13,7 +13,7 @@ const int THREADS = std::thread::hardware_concurrency();
 
 class ThreadInfo {
   public:
-  const std::mt19937 random;
+  std::mt19937 random;
 
   const int threadCount = THREADS;
   const int threadNumber;
@@ -28,6 +28,9 @@ class ThreadInfo {
 
   int threadReturn;
 
+  ThreadInfo() noexcept : version(0), currentQuota(0), numberQuota(0), shipScrap(0), oversell(0), average(0), targetQuota(0), threadNumber(0), random(std::mt19937(0)) {
+  }
+  
   ThreadInfo(int version, int currentQuota, int numberQuota, int shipScrap, int oversell, int average, int targetQuota, int threadNumber, int seed) noexcept : version(version), currentQuota(currentQuota), numberQuota(numberQuota), shipScrap(shipScrap), oversell(oversell), average(average), targetQuota(targetQuota), threadNumber(threadNumber), random(std::mt19937(seed)) {
   }
 };
@@ -55,7 +58,7 @@ void threadedPassTest(ThreadInfo* threadData) noexcept {
 
   int moonPrice = 0;
   switch (threadData->version) {
-    case 40: 
+    case 40:
       moonPrice = TITAN;
       break;
 
@@ -103,7 +106,6 @@ int main() {
   int oversell;
   int average;
   int targetQuota;
-  ThreadInfo runData;
 
   std::cout << "Version: ";
   std::cin >> version;
@@ -127,12 +129,10 @@ int main() {
   std::cin >> targetQuota;
 
   std::thread threaded[THREADS];
-  ThreadInfo perThreadInfo[THREADS];
+  ThreadInfo *perThreadInfo = static_cast<ThreadInfo *>(::operator new[](THREADS * sizeof(ThreadInfo))); // this is kind of disgusting
   for (int i = 0; i < THREADS; i++) {
     std::random_device rngSeed;
-
-    perThreadInfo[i] = ThreadInfo(version, currentQuota, shipScrap, oversell, average, targetQuota, i, rngSeed());
-
+    new (&perThreadInfo[i]) ThreadInfo(version, currentQuota, numberQuota, shipScrap, oversell, average, targetQuota, i, rngSeed());
     threaded[i] = std::thread(threadedPassTest, &perThreadInfo[i]);
   }
 
@@ -140,7 +140,9 @@ int main() {
   for (int i = 0; i < THREADS; i++) {
     threaded[i].join();
     chance += (double)perThreadInfo[i].threadReturn;
+	perThreadInfo[i].~ThreadInfo(); // call destructor
   }
+  ::operator delete[](perThreadInfo); // free memory
 
   std::cout << std::fixed;
   std::cout << std::setprecision(8);
