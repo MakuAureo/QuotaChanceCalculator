@@ -146,7 +146,7 @@ int main() {
 
   std::cout << std::fixed;
   std::cout << std::setprecision(8);
-  chance = chance/MAX_ITERATIONS;
+  chance = chance / (((MAX_ITERATIONS - 1) / THREADS + 1) * THREADS);
   std::cout << 100*chance << '%' << std::endl;
 
   return 0;
