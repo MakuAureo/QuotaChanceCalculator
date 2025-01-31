@@ -12,21 +12,11 @@ const int ARTIFICE = 1500;
 const int THREADS = std::thread::hardware_concurrency();
 
 class SFC64 {
+  public:
+  SFC64(uint64_t seed);
+  uint64_t next();
+  private:
   uint64_t a, b, c, counter;
-
-  SFC64(uint64_t seed) {
-	a = seed;
-	b = seed ^ 0xdeadbeefcafebabe;
-	c = (seed << 32) | (seed >> 32);
-	counter = 1;
-  }
-  uint64_t next() {
-    uint64_t result = a + b + counter++;
-    a = b ^ (b >> 11);
-    b = c + (c << 3);
-    c = ((c << 24) | (c >> 40)) + result;
-    return result;
-  }
 };
 
 class ThreadInfo {
@@ -46,9 +36,28 @@ class ThreadInfo {
 
   int threadReturn;
   
-  ThreadInfo(int version, int currentQuota, int numberQuota, int shipScrap, int oversell, int average, int targetQuota, int threadNumber, int seed) noexcept : version(version), currentQuota(currentQuota), numberQuota(numberQuota), shipScrap(shipScrap), oversell(oversell), average(average), targetQuota(targetQuota), threadNumber(threadNumber)), random(SFC64(seed)){
-  }
+  ThreadInfo(int version, int currentQuota, int numberQuota, int shipScrap, int oversell, int average, int targetQuota, int threadNumber, int seed) noexcept;
 };
+
+SFC64::SFC64(uint64_t seed) {
+  a = seed;
+  b = seed ^ 0xdeadbeefcafebabe;
+  c = (seed << 32) | (seed >> 32);
+  counter = 1;
+  
+  next();
+}
+
+uint64_t SFC64::next() {
+    uint64_t result = a + b + counter++;
+    a = b ^ (b >> 11);
+    b = c + (c << 3);
+    c = ((c << 24) | (c >> 40)) + result;
+    return result;
+  }
+
+ThreadInfo::ThreadInfo(int version, int currentQuota, int numberQuota, int shipScrap, int oversell, int average, int targetQuota, int threadNumber, int seed) noexcept : version(version), currentQuota(currentQuota), numberQuota(numberQuota), shipScrap(shipScrap), oversell(oversell), average(average), targetQuota(targetQuota), threadNumber(threadNumber), random(seed){
+}
 
 double dist0to1(uint64_t x) noexcept {
   x &= 0b0'00000000000'1111111111111111111111111111111111111111111111111111;
