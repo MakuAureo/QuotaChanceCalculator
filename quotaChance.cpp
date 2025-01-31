@@ -11,9 +11,27 @@ const int TITAN = 700;
 const int ARTIFICE = 1500;
 const int THREADS = std::thread::hardware_concurrency();
 
+class SFC64 {
+  uint64_t a, b, c, counter;
+
+  SFC64(uint64_t seed) {
+	a = seed;
+	b = seed ^ 0xdeadbeefcafebabe;
+	c = (seed << 32) | (seed >> 32);
+	counter = 1;
+  }
+  uint64_t next() {
+    uint64_t result = a + b + counter++;
+    a = b ^ (b >> 11);
+    b = c + (c << 3);
+    c = ((c << 24) | (c >> 40)) + result;
+    return result;
+  }
+};
+
 class ThreadInfo {
   public:
-  std::mt19937 random;
+  SFC64 random;
 
   const int threadCount = THREADS;
   const int threadNumber;
@@ -28,9 +46,15 @@ class ThreadInfo {
 
   int threadReturn;
   
-  ThreadInfo(int version, int currentQuota, int numberQuota, int shipScrap, int oversell, int average, int targetQuota, int threadNumber, int seed) noexcept : version(version), currentQuota(currentQuota), numberQuota(numberQuota), shipScrap(shipScrap), oversell(oversell), average(average), targetQuota(targetQuota), threadNumber(threadNumber), random(std::mt19937(seed)) {
+  ThreadInfo(int version, int currentQuota, int numberQuota, int shipScrap, int oversell, int average, int targetQuota, int threadNumber, int seed) noexcept : version(version), currentQuota(currentQuota), numberQuota(numberQuota), shipScrap(shipScrap), oversell(oversell), average(average), targetQuota(targetQuota), threadNumber(threadNumber)), random(SFC64(seed)){
   }
 };
+
+double dist0to1(uint64_t x) noexcept {
+  x &= 0b0'00000000000'1111111111111111111111111111111111111111111111111111;
+  x |= 0b0'01111111111'0000000000000000000000000000000000000000000000000000;
+  return *reinterpret_cast<double *>(&x) - 1.0D;
+}
 
 //Curve that the game uses to skew the random number generator towards 0
 double qCurve(double x) noexcept {
@@ -48,7 +72,6 @@ int incQuota(int num, double r) noexcept {
 }
 
 void threadedPassTest(ThreadInfo* threadData) noexcept {
-  std::uniform_real_distribution<double> unit(0.0, 1.0);
   int passes = 0;
 
   int moonPrice = 0;
@@ -82,7 +105,7 @@ void threadedPassTest(ThreadInfo* threadData) noexcept {
       else
         needSell += std::max(moonPrice, quota);
 
-      quota += incQuota(j, unit(threadData->random));
+      quota += incQuota(j, dist0to1(threadData->random.next()));
       finalJ = j;
     }
 
