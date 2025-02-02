@@ -15,6 +15,7 @@ class SFC64 {
   public:
   SFC64(uint64_t seed);
   uint64_t next();
+  
   private:
   uint64_t a, b, c, counter;
 };
@@ -49,12 +50,12 @@ SFC64::SFC64(uint64_t seed) {
 }
 
 uint64_t SFC64::next() {
-    uint64_t result = a + b + counter++;
-    a = b ^ (b >> 11);
-    b = c + (c << 3);
-    c = ((c << 24) | (c >> 40)) + result;
-    return result;
-  }
+  uint64_t result = a + b + counter++;
+  a = b ^ (b >> 11);
+  b = c + (c << 3);
+  c = ((c << 24) | (c >> 40)) + result;
+  return result;
+}
 
 ThreadInfo::ThreadInfo(int version, int currentQuota, int numberQuota, int shipScrap, int oversell, int average, int targetQuota, int threadNumber, int seed) noexcept : version(version), currentQuota(currentQuota), numberQuota(numberQuota), shipScrap(shipScrap), oversell(oversell), average(average), targetQuota(targetQuota), threadNumber(threadNumber), random(seed){
 }
