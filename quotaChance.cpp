@@ -125,7 +125,7 @@ void threadedPassTest(ThreadInfo* threadData) noexcept {
   threadData->threadReturn = passes;
 }
 
-int main() {
+int main(int argc, char *argv[]) {
   int version;
   int currentQuota;
   int numberQuota;
@@ -133,27 +133,38 @@ int main() {
   int oversell;
   int average;
   int targetQuota;
+  
+  if(argc == 8){
+    version = std::stoi(argv[1]);
+    currentQuota = std::stoi(argv[2]);
+    numberQuota = std::stoi(argv[3]);
+    shipScrap = std::stoi(argv[4]);
+    oversell = std::stoi(argv[5]);
+    average = std::stoi(argv[6]);
+    targetQuota = std::stoi(argv[7]);
+  }
+  else {
+    std::cout << "Version: ";
+    std::cin >> version;
 
-  std::cout << "Version: ";
-  std::cin >> version;
+    std::cout << "Current quota: ";
+    std::cin >> currentQuota;
 
-  std::cout << "Current quota: ";
-  std::cin >> currentQuota;
+    std::cout << "Current quota number: ";
+    std::cin >> numberQuota;
 
-  std::cout << "Current quota number: ";
-  std::cin >> numberQuota;
+    std::cout << "Ship scrap: ";
+    std::cin >> shipScrap;
 
-  std::cout << "Ship scrap: ";
-  std::cin >> shipScrap;
+    std::cout << "Oversell: ";
+    std::cin >> oversell;
 
-  std::cout << "Oversell: ";
-  std::cin >> oversell;
+    std::cout << "Estimated average: ";
+    std::cin >> average;
 
-  std::cout << "Estimated average: ";
-  std::cin >> average;
-
-  std::cout << "Target quota: ";
-  std::cin >> targetQuota;
+    std::cout << "Target quota: ";
+    std::cin >> targetQuota;
+  }
 
   std::thread threaded[THREADS];
   alignas(ThreadInfo) ThreadInfo *perThreadInfo = static_cast<ThreadInfo *>(::operator new[](THREADS * sizeof(ThreadInfo))); // this is kind of disgusting
