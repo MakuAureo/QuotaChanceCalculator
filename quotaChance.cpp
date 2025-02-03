@@ -3,6 +3,7 @@
 #include <iomanip>
 #include <thread>
 #include <random>
+#include <chrono>
 
 #define MAX_ITERATIONS 2e7
 
@@ -167,6 +168,7 @@ int main(int argc, char *argv[]) {
     std::cin >> targetQuota;
   }
 
+  const auto start = std::chrono::high_resolution_clock::now();
   std::thread threaded[THREADS];
   alignas(ThreadInfo) ThreadInfo *perThreadInfo = static_cast<ThreadInfo *>(::operator new[](THREADS * sizeof(ThreadInfo))); // this is kind of disgusting
   for (int i = 0; i < THREADS; i++) {
@@ -182,11 +184,13 @@ int main(int argc, char *argv[]) {
 	perThreadInfo[i].~ThreadInfo(); // call destructor
   }
   ::operator delete[](perThreadInfo); // free memory
+  const auto end = std::chrono::high_resolution_clock::now();
 
   std::cout << std::fixed;
   std::cout << std::setprecision(8);
   chance = chance / (((MAX_ITERATIONS - 1) / THREADS + 1) * THREADS);
   std::cout << 100*chance << '%' << std::endl;
+  std::cout << "time: " << std::chrono::duration<double>(end - start) << std::endl;
 
   return 0;
 }
