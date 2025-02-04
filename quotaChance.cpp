@@ -67,7 +67,7 @@ double dist0to1(uint64_t x) noexcept {
   // | set the exponent so that the double is now between 1.0 and 1.9999999
   x |= 0b0'01111111111'0000000000000000000000000000000000000000000000000000;
   // reinterpret bits as a double, subtract 1
-  return *reinterpret_cast<double *>(&x) - 1.0D;
+  return *reinterpret_cast<double *>(&x) - 1.0;
 }
 
 //Curve that the game uses to skew the random number generator towards 0
@@ -197,7 +197,7 @@ int main(int argc, char *argv[]) {
   std::cout << std::setprecision(8);
   chance = chance / (((MAX_ITERATIONS - 1) / THREADS + 1) * THREADS);
   std::cout << 100*chance << '%' << std::endl;
-  std::cout << "time: " << std::chrono::duration<double>(end - start) << std::endl;
+  std::cout << "time: " << std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count() << std::endl;
 
   return 0;
 }
