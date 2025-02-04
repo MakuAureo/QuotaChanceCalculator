@@ -62,8 +62,11 @@ ThreadInfo::ThreadInfo(int version, int currentQuota, int numberQuota, int shipS
 }
 
 double dist0to1(uint64_t x) noexcept {
+  // & to keep only the mantissa
   x &= 0b0'00000000000'1111111111111111111111111111111111111111111111111111;
+  // | set the exponent so that the double is now between 1.0 and 1.9999999
   x |= 0b0'01111111111'0000000000000000000000000000000000000000000000000000;
+  // reinterpret bits as a double, subtract 1
   return *reinterpret_cast<double *>(&x) - 1.0D;
 }
 
@@ -107,11 +110,13 @@ void threadedPassTest(ThreadInfo* threadData) noexcept {
   int iterations = (MAX_ITERATIONS - 1) / threadData->threadCount + 1;
   int finalJ;
   for (int i = threadData->threadNumber*iterations; i < (threadData->threadNumber + 1)*iterations && i < MAX_ITERATIONS; i++) {
+	// + 5 is to make it equal to calling ceil, simplification of (5 * threadData->oversell - 1) / 6 + 1 that compiles better
     int needSell = (5*threadData->oversell + 5)/6;
     int quota = threadData->currentQuota;
 
     for (int j = threadData->numberQuota; quota < threadData->targetQuota; j++) {
       if (moonPrice - 75 > quota)
+        // + 5 is to make it equal to calling ceil, simplification of (5 * threadData->oversell - 1) / 6 + 1 that compiles better
         needSell += (5*moonPrice + 75 + quota + 5)/6;
       else
         needSell += std::max(moonPrice, quota);
@@ -170,9 +175,11 @@ int main(int argc, char *argv[]) {
 
   const auto start = std::chrono::high_resolution_clock::now();
   std::thread threaded[THREADS];
+  // allocate the memory for an array of ThreadInfo's without initializing any of them(essentially the same as just using malloc)
   alignas(ThreadInfo) ThreadInfo *perThreadInfo = static_cast<ThreadInfo *>(::operator new[](THREADS * sizeof(ThreadInfo))); // this is kind of disgusting
   for (int i = 0; i < THREADS; i++) {
     std::random_device rngSeed;
+    // initialize the ThreadInfo's into memory using placement new
     new (&perThreadInfo[i]) ThreadInfo(version, currentQuota, numberQuota, shipScrap, oversell, average, targetQuota, i, rngSeed());
     threaded[i] = std::thread(threadedPassTest, &perThreadInfo[i]);
   }
